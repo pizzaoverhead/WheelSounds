@@ -13,6 +13,17 @@ public class WheelSounds : PartModule
     public string wheelSoundFile = "WheelSounds/Sounds/RoveMaxS2";
     public FXGroup WheelSound = null;
 
+    private ModuleWheel _wheelModule = null;
+    private ModuleWheel wheelModule
+    {
+        get
+        {
+            if (this._wheelModule == null)
+                this._wheelModule = (ModuleWheel)this.part.Modules["ModuleWheel"];
+            return this._wheelModule;
+        }
+    }
+
     public override void OnStart(StartState state)
     {
         if (state == StartState.Editor || state == StartState.None) return;
@@ -36,12 +47,13 @@ public class WheelSounds : PartModule
             WheelSound.audio.Stop();
             WheelSound.audio.loop = true;
             WheelSound.audio.volume = wheelSoundVolume;
+
+            // Seek to a random position in the sound file so we don't have harmonic effects with other wheels.
+            WheelSound.audio.time = UnityEngine.Random.Range(0, WheelSound.audio.clip.length);
         }
 
         GameEvents.onGamePause.Add(new EventVoid.OnEvent(this.OnPause));
         GameEvents.onGameUnpause.Add(new EventVoid.OnEvent(this.OnUnPause));
-
-        base.OnStart(state);
     }
 
     void OnPause()
@@ -62,14 +74,11 @@ public class WheelSounds : PartModule
 
     public override void OnUpdate()
     {
-        base.OnUpdate();
-
         if (WheelSound != null)
         {
             float totalRpm = 0f;
             int wheelCount = 0;
 
-            ModuleWheel wheelModule = (ModuleWheel)this.part.Modules["ModuleWheel"];
             foreach (Wheel wheel in wheelModule.wheels)
             {
                 if (wheel.whCollider != null)
@@ -82,24 +91,34 @@ public class WheelSounds : PartModule
             if (wheelCount > 0)
             {
                 float averageRpm = totalRpm / wheelCount;
-
-                if (wheelModule.hasMotor && wheelModule.motorEnabled && !wheelModule.isDamaged && averageRpm > 0)
+                try
                 {
-                    WheelSound.audio.pitch = (float)(Math.Sqrt(averageRpm)) / 13;
-
-                    if (averageRpm < 100)
+                    if (wheelModule.hasMotor && wheelModule.motorEnabled && !wheelModule.isDamaged && averageRpm > 0.5)
                     {
-                        WheelSound.audio.volume = wheelSoundVolume * averageRpm / 100;
-                    }
+                        WheelSound.audio.pitch = (float)(Math.Sqrt(averageRpm)) / 13;
 
-                    if (!WheelSound.audio.isPlaying)
-                        WheelSound.audio.Play();
+                        if (averageRpm < 100)
+                        {
+                            WheelSound.audio.volume = (float)Mathf.Max(wheelSoundVolume * averageRpm / 100f, 0.006f); ;
+                        }
+
+                        if (!WheelSound.audio.isPlaying)
+                            WheelSound.audio.Play();
+                    }
+                    else
+                    {
+                        WheelSound.audio.Stop();
+                    }
                 }
-                else
-                    WheelSound.audio.Stop();
+                catch (Exception ex)
+                {
+                    Debug.LogError("WheelSounds: " + ex.Message);
+                }
             }
             else
-                WheelSound.audio.Stop();
+            {
+                // Do nothing. This happens once every several updates.
+            }
         }
         else
             Debug.LogError("WheelSounds on update: Component was null");
