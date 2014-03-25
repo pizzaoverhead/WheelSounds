@@ -10,7 +10,9 @@ public class WheelSounds : PartModule
     [KSPField]
     public float wheelSoundVolume = 1f;
     [KSPField]
-    public string wheelSoundFile = "WheelSounds/Sounds/RoveMaxS2";
+	public string wheelSoundFile = "WheelSounds/Sounds/RoveMaxS2";
+	[KSPField]
+	public string blurTexture = "";
     public FXGroup WheelSound = null;
 
     private ModuleWheel _wheelModule = null;
@@ -46,7 +48,7 @@ public class WheelSounds : PartModule
             WheelSound.audio.dopplerLevel = 0f;
             WheelSound.audio.Stop();
             WheelSound.audio.loop = true;
-            WheelSound.audio.volume = wheelSoundVolume;
+			WheelSound.audio.volume = wheelSoundVolume * GameSettings.SHIP_VOLUME;
 
             // Seek to a random position in the sound file so we don't have harmonic effects with other wheels.
             WheelSound.audio.time = UnityEngine.Random.Range(0, WheelSound.audio.clip.length);
@@ -63,7 +65,7 @@ public class WheelSounds : PartModule
 
     void OnUnPause()
     {
-        WheelSound.audio.volume = wheelSoundVolume;
+		WheelSound.audio.volume = wheelSoundVolume * GameSettings.SHIP_VOLUME;
     }
 
     void OnDestroy()
@@ -99,7 +101,7 @@ public class WheelSounds : PartModule
 
                         if (averageRpm < 100)
                         {
-                            WheelSound.audio.volume = (float)Mathf.Max(wheelSoundVolume * averageRpm / 100f, 0.006f); ;
+							WheelSound.audio.volume = (float)Mathf.Max(wheelSoundVolume * GameSettings.SHIP_VOLUME * averageRpm / 100f, 0.006f); ;
                         }
 
                         if (!WheelSound.audio.isPlaying)
@@ -167,7 +169,7 @@ public class GearSounds : PartModule
             GearSound.audio.dopplerLevel = 0f;
             GearSound.audio.Stop();
             GearSound.audio.loop = false;
-            GearSound.audio.volume = gearSoundVolume;
+			GearSound.audio.volume = gearSoundVolume * GameSettings.SHIP_VOLUME;
             // For some reason these clips aren't starting at the beginning for parts other than the first one.
             GearSound.audio.time = 0;
 
@@ -188,7 +190,7 @@ public class GearSounds : PartModule
 
     void OnUnPause()
     {
-        GearSound.audio.volume = gearSoundVolume;
+		GearSound.audio.volume = gearSoundVolume * GameSettings.SHIP_VOLUME;
     }
 
     void OnDestroy()
