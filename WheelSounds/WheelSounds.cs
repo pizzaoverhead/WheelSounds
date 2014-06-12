@@ -6,8 +6,8 @@ public class WheelSounds : PartModule
     [KSPField]
     public float wheelSoundVolume = 1f;
     [KSPField]
-	public string wheelSoundFile = "WheelSounds/Sounds/RoveMaxS2";
-    public FXGroup WheelSound = null;
+    public string wheelSoundFile = "WheelSounds/Sounds/RoveMaxS2";
+    public FXGroup WheelSound = null; // Initialised by KSP.
 
     private ModuleWheel _wheelModule = null;
     private ModuleWheel wheelModule
@@ -38,12 +38,12 @@ public class WheelSounds : PartModule
         else
         {
             WheelSound.audio = gameObject.AddComponent<AudioSource>();
-			WheelSound.audio.clip = GameDatabase.Instance.GetAudioClip(wheelSoundFile);
-			WheelSound.audio.dopplerLevel = 0f;
-			WheelSound.audio.rolloffMode = AudioRolloffMode.Logarithmic;
+            WheelSound.audio.clip = GameDatabase.Instance.GetAudioClip(wheelSoundFile);
+            WheelSound.audio.dopplerLevel = 0f;
+            WheelSound.audio.rolloffMode = AudioRolloffMode.Logarithmic;
             WheelSound.audio.Stop();
             WheelSound.audio.loop = true;
-			WheelSound.audio.volume = wheelSoundVolume * GameSettings.SHIP_VOLUME;
+            WheelSound.audio.volume = wheelSoundVolume * GameSettings.SHIP_VOLUME;
 
             // Seek to a random position in the sound file so we don't have harmonic effects with other wheels.
             WheelSound.audio.time = UnityEngine.Random.Range(0, WheelSound.audio.clip.length);
@@ -58,8 +58,8 @@ public class WheelSounds : PartModule
     }
 
     void OnDestroy()
-	{
-		WheelSound.audio.Stop();
+    {
+        WheelSound.audio.Stop();
         GameEvents.onGamePause.Remove(new EventVoid.OnEvent(OnPause));
     }
 
@@ -90,7 +90,7 @@ public class WheelSounds : PartModule
 
                         if (averageRpm < 100)
                         {
-							WheelSound.audio.volume = (float)Math.Max(wheelSoundVolume * GameSettings.SHIP_VOLUME * averageRpm / 100f, 0.006f); ;
+                            WheelSound.audio.volume = (float)Math.Max(wheelSoundVolume * GameSettings.SHIP_VOLUME * averageRpm / 100f, 0.006f); ;
                         }
 
                         if (!WheelSound.audio.isPlaying)
