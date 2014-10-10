@@ -1,75 +1,74 @@
 using System;
+using System.Linq;
 using UnityEngine;
 
-public class WheelSounds : PartModule
+namespace WheelSounds
 {
-    [KSPField]
-    public float wheelSoundVolume = 1f;
-    [KSPField]
-	public string wheelSoundFile = "WheelSounds/Sounds/RoveMaxS2";
-    public FXGroup WheelSound = null;
-
-    private ModuleWheel _wheelModule = null;
-    private ModuleWheel wheelModule
+    public class WheelSounds : PartModule
     {
-        get
-        {
-            if (this._wheelModule == null)
-                this._wheelModule = (ModuleWheel)this.part.Modules["ModuleWheel"];
-            return this._wheelModule;
-        }
-    }
+        [KSPField]
+        public float wheelSoundVolume = 1f;
+        [KSPField]
+        public string wheelSoundFile = "WheelSounds/Sounds/RoveMaxS2";
+        public FXGroup WheelSound = null; // Initialised by KSP.
 
-    public override void OnStart(StartState state)
-    {
-        if (state == StartState.Editor || state == StartState.None) return;
-
-        if (!GameDatabase.Instance.ExistsAudioClip(wheelSoundFile))
+        private ModuleWheel _wheelModule = null;
+        private ModuleWheel wheelModule
         {
-            Debug.LogError("WheelSounds: Audio file not found: " + wheelSoundFile);
-            return;
+            get { return _wheelModule ?? (_wheelModule = (ModuleWheel)part.Modules["ModuleWheel"]); }
         }
 
-        if (WheelSound == null)
+        public override void OnStart(StartState state)
         {
-            Debug.LogError("WheelSounds: Component was null");
-            return;
-        }
-        else
-        {
+            if (state == StartState.Editor || state == StartState.None) return;
+
+            if (!GameDatabase.Instance.ExistsAudioClip(wheelSoundFile))
+            {
+                Debug.LogError("WheelSounds: Audio file not found: " + wheelSoundFile);
+                return;
+            }
+
+            if (WheelSound == null)
+            {
+                Debug.LogError("WheelSounds: Component was null");
+                return;
+            }
             WheelSound.audio = gameObject.AddComponent<AudioSource>();
-			WheelSound.audio.clip = GameDatabase.Instance.GetAudioClip(wheelSoundFile);
-			WheelSound.audio.dopplerLevel = 0f;
-			WheelSound.audio.rolloffMode = AudioRolloffMode.Logarithmic;
+            WheelSound.audio.clip = GameDatabase.Instance.GetAudioClip(wheelSoundFile);
+            WheelSound.audio.dopplerLevel = 0f;
+            WheelSound.audio.rolloffMode = AudioRolloffMode.Logarithmic;
             WheelSound.audio.Stop();
             WheelSound.audio.loop = true;
-			WheelSound.audio.volume = wheelSoundVolume * GameSettings.SHIP_VOLUME;
+            WheelSound.audio.volume = wheelSoundVolume * GameSettings.SHIP_VOLUME;
 
             // Seek to a random position in the sound file so we don't have harmonic effects with other wheels.
             WheelSound.audio.time = UnityEngine.Random.Range(0, WheelSound.audio.clip.length);
+
+            GameEvents.onGamePause.Add(OnPause);
         }
 
-        GameEvents.onGamePause.Add(new EventVoid.OnEvent(this.OnPause));
-    }
-
-    void OnPause()
-    {
-        WheelSound.audio.Stop();
-    }
-
-    void OnDestroy()
-	{
-		WheelSound.audio.Stop();
-        GameEvents.onGamePause.Remove(new EventVoid.OnEvent(OnPause));
-    }
-
-    public override void OnUpdate()
-    {
-        if (WheelSound != null)
+        void OnPause()
         {
-            double totalRpm = 0f;
-            int wheelCount = 0;
+            WheelSound.audio.Stop();
+        }
 
+        void OnDestroy()
+        {
+            if (WheelSound != null && WheelSound.audio != null)
+                WheelSound.audio.Stop();
+            GameEvents.onGamePause.Remove(OnPause);
+        }
+
+        public override void OnUpdate()
+        {
+            if (WheelSound == null)
+            {
+                Debug.LogError("WheelSounds on update: Component was null");
+                return;
+            }
+
+            double totalRpm = 0d;
+            int wheelCount = 0;
             foreach (Wheel wheel in wheelModule.wheels)
             {
                 if (wheel.whCollider != null)
@@ -78,40 +77,30 @@ public class WheelSounds : PartModule
                     wheelCount++;
                 }
             }
+            if (wheelCount == 0) return;
 
-            if (wheelCount > 0)
+            double averageRpm = totalRpm / wheelCount;
+            try
             {
-                double averageRpm = totalRpm / wheelCount;
-                try
+                if (wheelModule.hasMotor && wheelModule.motorEnabled && !wheelModule.isDamaged && averageRpm > 0.5)
                 {
-                    if (wheelModule.hasMotor && wheelModule.motorEnabled && !wheelModule.isDamaged && averageRpm > 0.5)
-                    {
-                        WheelSound.audio.pitch = (float)(Math.Sqrt(averageRpm)) / 13;
+                    WheelSound.audio.pitch = (float)(Math.Sqrt(averageRpm)) / 13;
 
-                        if (averageRpm < 100)
-                        {
-							WheelSound.audio.volume = (float)Math.Max(wheelSoundVolume * GameSettings.SHIP_VOLUME * averageRpm / 100f, 0.006f); ;
-                        }
-
-                        if (!WheelSound.audio.isPlaying)
-                            WheelSound.audio.Play();
-                    }
-                    else
+                    if (averageRpm < 100)
                     {
-                        WheelSound.audio.Stop();
+                        WheelSound.audio.volume = (float)Math.Max(wheelSoundVolume * GameSettings.SHIP_VOLUME * averageRpm / 100f, 0.006f);
                     }
+
+                    if (!WheelSound.audio.isPlaying)
+                        WheelSound.audio.Play();
                 }
-                catch (Exception ex)
-                {
-                    Debug.LogError("WheelSounds: " + ex.Message);
-                }
+                else
+                    WheelSound.audio.Stop();
             }
-            else
+            catch (Exception ex)
             {
-                // Do nothing. This happens once every several updates.
+                Debug.LogError("WheelSounds: " + ex.Message);
             }
         }
-        else
-            Debug.LogError("WheelSounds on update: Component was null");
     }
 }
