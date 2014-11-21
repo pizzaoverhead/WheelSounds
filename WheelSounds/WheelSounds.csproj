@@ -46,6 +46,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FSwheelAdapter.cs" />
+    <Compile Include="IWheelModuleAdapter.cs" />
+    <Compile Include="ModuleWheelAdapter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WheelSounds.cs" />
   </ItemGroup>
