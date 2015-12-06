@@ -11,9 +11,11 @@ namespace WheelSounds
         public float wheelSoundVolume = 1f;
         [KSPField]
         public string wheelSoundFile = "WheelSounds/Sounds/RoveMaxS2";
+        [KSPField]
+        public bool soundInVacuum = true;
         public FXGroup WheelSound = null; // Initialised by KSP.
 
-        private bool enabled = true;
+        private bool soundsEnabled = true;
 
         //private ModuleWheel _wheelModule = null;
         //private ModuleWheel wheelModule
@@ -21,15 +23,15 @@ namespace WheelSounds
         //    get { return _wheelModule ?? (_wheelModule = (ModuleWheel)part.Modules["ModuleWheel"]); }
         //}
         private IWheelModuleAdapter _wheelModule = null;
-        private IWheelModuleAdapter wheelModule
+        private IWheelModuleAdapter WheelModule
         {
             get
             {
-                if(_wheelModule == null)
+                if (_wheelModule == null)
                 {
-                    PartModule module = part.Modules["ModuleWheel"] as ModuleWheel;
+                    PartModule module = part.FindModuleImplementing<ModuleWheel>();
 
-                    if(module != null)
+                    if (module != null)
                     {
                         Debug.Log("WheelSounds: Found ModuleWheel, creating ModuleWheelAdapter.");
 
@@ -39,7 +41,7 @@ namespace WheelSounds
                     {
                         module = part.Modules["FSwheel"] as PartModule;
 
-                        if(module != null)
+                        if (module != null)
                         {
                             Debug.Log("WheelSounds: Found FSwheel, creating FSwheelAdapter.");
 
@@ -49,9 +51,9 @@ namespace WheelSounds
                     }
                 }
 
-                if(_wheelModule == null)
+                if (_wheelModule == null)
                 {
-                    Debug.Log("WheelSounds: No valid wheel modules found.");
+                    Debug.LogWarning("WheelSounds: No valid wheel modules found in part " + part);
                 }
 
                 return _wheelModule;
@@ -101,25 +103,30 @@ namespace WheelSounds
 
         public override void OnUpdate()
         {
-            if(enabled)
+            if (soundsEnabled)
             {
-                if(WheelSound == null)
+                if (WheelSound == null)
                 {
                     Debug.LogError("WheelSounds on update: Component was null");
                     return;
                 }
 
-                if(wheelModule == null || !wheelModule.IsValid)
+                if (WheelModule == null || !WheelModule.IsValid)
                 {
-                    enabled = false;
+                    soundsEnabled = false;
+                    return;
+                }
 
+                if (!soundInVacuum && vessel.atmDensity <= 0)
+                {
+                    WheelSound.audio.Stop();
                     return;
                 }
 
                 double totalRpm = 0d;
                 int wheelCount = 0;
 
-                foreach(WheelCollider wheelCollider in wheelModule.Wheels)
+                foreach (WheelCollider wheelCollider in WheelModule.Wheels)
                 {
                     totalRpm += Math.Abs(wheelCollider.rpm);
                     wheelCount++;
@@ -128,22 +135,22 @@ namespace WheelSounds
                 double averageRpm = totalRpm / wheelCount;
                 try
                 {
-                    if(wheelModule.HasMotor && wheelModule.MotorEnabled && !wheelModule.Damaged && averageRpm > 0.5)
+                    if (WheelModule.HasMotor && WheelModule.MotorEnabled && !WheelModule.Damaged && averageRpm > 0.5)
                     {
                         WheelSound.audio.pitch = (float)(Math.Sqrt(averageRpm)) / 13;
 
-                        if(averageRpm < 100)
+                        if (averageRpm < 100)
                         {
                             WheelSound.audio.volume = (float)Math.Max(wheelSoundVolume * GameSettings.SHIP_VOLUME * averageRpm / 100f, 0.006f);
                         }
 
-                        if(!WheelSound.audio.isPlaying)
+                        if (!WheelSound.audio.isPlaying)
                             WheelSound.audio.Play();
                     }
                     else
                         WheelSound.audio.Stop();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Debug.LogError("WheelSounds: " + ex.Message);
                 }
