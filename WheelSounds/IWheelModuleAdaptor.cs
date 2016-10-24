@@ -5,12 +5,13 @@ using UnityEngine;
 
 namespace WheelSounds
 {
-    internal interface IWheelModuleAdapter
+    internal interface IWheelModuleAdaptor
     {
         bool IsValid { get; }
         bool HasMotor { get; }
         bool MotorEnabled { get; }
         bool Damaged { get; }
-        List<WheelCollider> Wheels { get; }
+        double GetRpm();
+        Vector2 TireForce { get; }
     }
 }

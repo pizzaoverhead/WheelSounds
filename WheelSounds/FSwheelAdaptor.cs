@@ -8,13 +8,13 @@ using UnityEngine;
 namespace WheelSounds
 {
     /// <summary>
-    /// Adapts an FSwheel part module to the well-known IWheelModuleAdapter interface using reflection.
+    /// Adapts an FSwheel part module to the well-known IWheelModuleAdaptor interface using reflection.
     /// </summary>
     /// <remarks>
     /// Firespitter's FSwheel consists of several classes that are unique to the Firespitter assembly, but creating a hard reference/dependency is not
     /// desired. The remaining option is reflection, and care is taken to perform as much work as possible during initialization.
     /// </remarks>
-    internal sealed class FSwheelAdapter : IWheelModuleAdapter
+    internal sealed class FSwheelAdaptor : IWheelModuleAdaptor
     {
         private const string ASSEMBLY_NAME_FIRESPITTER = "Firespitter";
         private const string TYPE_NAME_FSWHEEL = "FSwheel";
@@ -90,7 +90,7 @@ namespace WheelSounds
             }
         }
 
-        public FSwheelAdapter(PartModule partModule)
+        public FSwheelAdaptor(PartModule partModule)
         {
             if(partModule == null)
                 throw new ArgumentNullException("partModule");
@@ -121,7 +121,7 @@ namespace WheelSounds
                     {
                         this.wheelColliders.Add(wheelCollider);
 
-                        // Once at least one WheelCollider is available, the adapter should be valid for use by WheelSounds.
+                        // Once at least one WheelCollider is available, the adaptor should be valid for use by WheelSounds.
                         this.isValid = true;
                     }
                 }
@@ -135,7 +135,14 @@ namespace WheelSounds
             return value.HasValue ? value.Value : defaultValue;
         }
 
-        #region IWheelModuleAdapter Members
+        #region IWheelModuleAdaptor Members
+
+        public event EventHandler WheelDamaged;
+        //public event Action WheelDamaged;
+        public void FireOnWheelDamage()
+        {
+            WheelDamaged(this, null);
+        }
 
         public bool IsValid
         {
@@ -170,11 +177,26 @@ namespace WheelSounds
             }
         }
 
-        public List<WheelCollider> Wheels
+        public double GetRpm()
+        {
+            double totalRpm = 0d;
+            int wheelCount = 0;
+
+            foreach (WheelCollider wheelCollider in this.wheelColliders)
+            {
+                totalRpm += Math.Abs(wheelCollider.rpm);
+                wheelCount++;
+            }
+
+            return totalRpm / wheelCount;
+        }
+
+        public Vector2 TireForce
         {
             get
             {
-                return this.wheelColliders;
+                // Firespitter doesn't implement skidding, so return 0.
+                return Vector2.zero;
             }
         }
 

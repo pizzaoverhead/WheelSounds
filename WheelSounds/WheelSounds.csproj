@@ -32,7 +32,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\Squad binaries\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\..\Squad binaries\x64\Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="KSPAssets">
+      <HintPath>..\..\Squad binaries\x64\KSPAssets.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -42,19 +45,25 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine">
-      <HintPath>..\..\Squad binaries\UnityEngine.dll</HintPath>
+      <HintPath>..\..\Squad binaries\x64\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>..\..\Squad binaries\x64\UnityEngine.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FSwheelAdapter.cs" />
-    <Compile Include="IWheelModuleAdapter.cs" />
-    <Compile Include="ModuleWheelAdapter.cs" />
+    <Compile Include="FSwheelAdaptor.cs" />
+    <Compile Include="IWheelModuleAdaptor.cs" />
+    <Compile Include="ModuleWheelBaseAdaptor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WheelSounds.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy /y "$(TargetPath)" "C:\Games\Kerbal Space Program\GameData\WheelSounds\Plugins\"</PostBuildEvent>
+    <PostBuildEvent>xcopy /y "$(TargetPath)" "C:\Games\Kerbal Space Program\GameData\$(ProjectName)\Plugins\"
+xcopy /y "$(TargetDir)$(TargetName).pdb" "C:\Games\Kerbal Space Program\GameData\$(ProjectName)\Plugins\"
+call "C:\Games\Kerbal Space Program\GameData\$(ProjectName)\Plugins\GenerateMonoDebug.bat"  C:\Games\Kerbal~1\GameData\$(ProjectName)\Plugins\
+taskkill /IM tail.exe /F 2&gt;&amp;1 | exit /B 0</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
